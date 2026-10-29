@@ -356,9 +356,11 @@ details[open] summary{margin-bottom:10px}
     $('clockBanner').hidden = !S.offset;
     if (S.offset){ const h = Math.round(S.offset/36e5); $('clockBanner').textContent = `Test clock is ${Math.floor(h/24)}d ${h%24}h ahead of real time.`; }
 
-    const n = $('availN'); n.textContent = fmt(a); n.classList.toggle('neg', a < -EPS);
-    $('availLbl').textContent = a < -EPS ? `${pl(-a)} over` : `${pl(a)} left`;
-    $('availOf').textContent = `of ${S.budget} in any 7 days`;
+    const over = a < -EPS;
+    const n = $('availN'); n.textContent = fmt(over ? -a : a); n.classList.toggle('neg', over);
+    $('availLbl').textContent = over ? `${pl(-a)} over` : `${pl(a)} left`;
+    const back = over ? fitsAt(0) : null;
+    $('availOf').textContent = over && back ? `of ${S.budget} in any 7 days · back within your allowance ${when(back)}` : `of ${S.budget} in any 7 days`;
     const nx = act[0];
     $('nextLbl').innerHTML = nx ? `Next return: <b>${fmt(nx.amt)} ${pl(nx.amt)}</b> ${when(returnAt(nx.t))}` : 'Your full allowance is available.';
 
@@ -420,7 +422,11 @@ details[open] summary{margin-bottom:10px}
     S.pulls.push({id: uid(), t, k: d.k, amt: d.amt, late: true}); save();
     const a = available();
     v.className = 'verdict ok';
-    v.innerHTML = `<div class="head">Logged</div><p>${d.name} at ${when(t)}. ${returnAt(t) <= now() ? 'That was more than 7 days ago, so it no longer counts.' : `You have <b>${fmt(a)} ${pl(a)}</b> ${a < -EPS ? 'over' : 'left'}.`}</p>`;
+    let tail;
+    if (returnAt(t) <= now()) tail = 'That was more than 7 days ago, so it no longer counts.';
+    else if (a < -EPS){ const back = fitsAt(0); tail = `You're <b>${fmt(-a)} ${pl(-a)}</b> over. You're back within your allowance ${when(back)}.`; }
+    else tail = `You have <b>${fmt(a)} ${pl(a)}</b> left.`;
+    v.innerHTML = `<div class="head">Logged</div><p>${d.name} at ${when(t)}. ${tail}</p>`;
     $('lateBox').open = false; render();
   };
 
