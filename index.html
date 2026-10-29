@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Drink Tickets</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Tickets">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#EEF1F5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111620" media="(prefers-color-scheme: dark)">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=IBM+Plex+Mono:wght@400;500&family=Public+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one narrow column, like a ticket booth window. Balance on top, the pull action under it, the ledger below. */
+:root{
+  --bg:#EEF1F5; --surface:#FFFFFF; --ink:#1B2331; --muted:#5A6476; --line:#D6DCE5;
+  --ticket:#E6A83A; --ticket-deep:#C98A1E; --ticket-ink:#33240A; --ticket-empty:#E2E6EC;
+  --ok:#2D7A57; --ok-bg:#E4F2EA; --no:#A93838; --no-bg:#F7E6E5; --warn-bg:#FFF4DB;
+  --display:"Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --body:"Public Sans", -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#111620; --surface:#1A212D; --ink:#E7EBF1; --muted:#97A1B2; --line:#2B3443;
+  --ticket:#E9B24D; --ticket-deep:#C9922C; --ticket-ink:#2A1D05; --ticket-empty:#262E3B;
+  --ok:#62C394; --ok-bg:#16291F; --no:#F0837A; --no-bg:#2D1A1A; --warn-bg:#2B2414;
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#111620; --surface:#1A212D; --ink:#E7EBF1; --muted:#97A1B2; --line:#2B3443;
+  --ticket:#E9B24D; --ticket-deep:#C9922C; --ticket-ink:#2A1D05; --ticket-empty:#262E3B;
+  --ok:#62C394; --ok-bg:#16291F; --no:#F0837A; --no-bg:#2D1A1A; --warn-bg:#2B2414;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-top:calc(20px + env(safe-area-inset-top, 0px));padding-bottom:calc(48px + env(safe-area-inset-bottom, 0px))}
+.wrap{max-width:460px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+h1,h2{margin:0;text-wrap:balance}
+h2{font-size:12px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--ticket-deep);outline-offset:2px}
+
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.brand{font-family:var(--display);font-weight:800;font-size:22px;letter-spacing:.04em;text-transform:uppercase}
+.top .mono{font-size:12px;color:var(--muted)}
+
+.banner{background:var(--warn-bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13.5px;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between}
+.banner button{background:none;border:1px solid var(--ink);border-radius:999px;padding:4px 12px;font-size:13px;font-weight:600}
+
+/* Balance */
+.balance{display:flex;flex-direction:column;gap:12px}
+.big{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.big .n{font-family:var(--display);font-weight:800;font-size:88px;line-height:.85;font-variant-numeric:tabular-nums}
+.big .n.neg{color:var(--no)}
+.big .lbl{font-size:17px;font-weight:600}
+.big .of{font-size:13px;color:var(--muted);width:100%}
+.next{font-size:13.5px;color:var(--muted)}
+.next b{color:var(--ink);font-weight:600}
+
+.roll{display:flex;flex-wrap:wrap;gap:6px}
+.tk{position:relative;width:52px;height:30px;border-radius:3px;background:var(--ticket-empty);overflow:hidden;
+  -webkit-mask:radial-gradient(circle 5px at 0 50%,#0000 96%,#000) left/51% 100% no-repeat,radial-gradient(circle 5px at 100% 50%,#0000 96%,#000) right/51% 100% no-repeat;
+          mask:radial-gradient(circle 5px at 0 50%,#0000 96%,#000) left/51% 100% no-repeat,radial-gradient(circle 5px at 100% 50%,#0000 96%,#000) right/51% 100% no-repeat}
+.tk::before{content:"";position:absolute;inset:0 auto 0 0;width:calc(var(--f) * 100%);background:var(--ticket);transition:width .35s ease}
+.tk span{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--mono);font-size:10px;letter-spacing:.04em;color:var(--muted)}
+.tk.full span,.tk.part span{color:var(--ticket-ink)}
+
+/* Pull */
+.pull{display:flex;flex-direction:column;gap:10px}
+.primary{width:100%;border:0;border-radius:6px;background:var(--ticket);color:var(--ticket-ink);padding:18px 16px;
+  font-family:var(--display);font-weight:800;font-size:28px;letter-spacing:.05em;text-transform:uppercase;
+  -webkit-mask:radial-gradient(circle 10px at 0 50%,#0000 96%,#000) left/51% 100% no-repeat,radial-gradient(circle 10px at 100% 50%,#0000 96%,#000) right/51% 100% no-repeat;
+          mask:radial-gradient(circle 10px at 0 50%,#0000 96%,#000) left/51% 100% no-repeat,radial-gradient(circle 10px at 100% 50%,#0000 96%,#000) right/51% 100% no-repeat}
+.primary:active{background:var(--ticket-deep)}
+.primary small{display:block;font-family:var(--body);font-weight:600;font-size:12.5px;letter-spacing:.02em;text-transform:none;opacity:.8}
+.secondary{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:11px 14px;font-weight:600;font-size:14.5px;text-align:left;display:flex;justify-content:space-between;align-items:center}
+.picker{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.drink{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px;text-align:left;display:flex;flex-direction:column;gap:2px;min-width:0}
+.drink b{font-weight:600;font-size:14px;line-height:1.25}
+.drink .mono{font-size:12px;color:var(--muted)}
+.drink.nofit{opacity:.5}
+@media (max-width:360px){.picker{grid-template-columns:1fr}}
+
+/* Verdict */
+.verdict{border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;border:1px solid var(--line)}
+.verdict.ok{background:var(--ok-bg)}
+.verdict.no{background:var(--no-bg)}
+.verdict .head{font-weight:700;font-size:16px}
+.verdict.ok .head{color:var(--ok)}
+.verdict.no .head{color:var(--no)}
+.verdict p{margin:0;font-size:14px}
+.verdict .row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.link{background:none;border:0;padding:0;font-weight:600;font-size:13.5px;text-decoration:underline;text-underline-offset:3px;color:var(--muted)}
+
+/* Ledger */
+section.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.ledger{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.ledger li{display:grid;grid-template-columns:auto 1fr auto;gap:2px 12px;align-items:center;padding:9px 0;border-top:1px dashed var(--line)}
+.ledger li:first-child{border-top:0}
+.ledger .amt{font-family:var(--display);font-weight:800;font-size:22px;min-width:38px;text-align:center;grid-row:span 2}
+.ledger .what{font-weight:600;font-size:14px;min-width:0}
+.ledger .when{font-size:12px;color:var(--muted);grid-column:2}
+.ledger .x{grid-row:span 2;background:none;border:1px solid var(--line);border-radius:999px;font-size:12px;padding:3px 10px;color:var(--muted)}
+.ledger .x.arm{border-color:var(--no);color:var(--no)}
+.tag{font-family:var(--mono);font-size:10.5px;border:1px solid var(--line);border-radius:4px;padding:0 4px;margin-left:6px;color:var(--muted);font-weight:400}
+.empty{font-size:13.5px;color:var(--muted);margin:0}
+.past li{opacity:.6}
+
+details summary{cursor:pointer;font-weight:600;list-style:none;display:flex;justify-content:space-between;align-items:center}
+details summary::-webkit-details-marker{display:none}
+details summary::after{content:"+";font-family:var(--mono);color:var(--muted)}
+details[open] summary::after{content:"−"}
+details[open] summary{margin-bottom:10px}
+.form{display:flex;flex-direction:column;gap:10px}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:12.5px;font-weight:600;color:var(--muted)}
+.field input,.field select{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%;min-width:0}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap}
+.btn{background:var(--ink);color:var(--bg);border:0;border-radius:8px;padding:9px 14px;font-weight:600;font-size:14px}
+.btn.ghost{background:none;color:var(--ink);border:1px solid var(--line)}
+.btn.danger{background:none;color:var(--no);border:1px solid var(--no)}
+.hint{font-size:12.5px;color:var(--muted);margin:0}
+.stepper{display:flex;align-items:center;gap:10px}
+.stepper button{width:40px;height:40px;border-radius:8px;border:1px solid var(--line);background:var(--bg);font-size:20px;font-weight:600}
+.stepper output{font-family:var(--display);font-weight:800;font-size:34px;min-width:44px;text-align:center}
+.clock{background:var(--warn-bg);border-radius:8px;padding:8px 10px;font-size:13px}
+.table{width:100%;border-collapse:collapse;font-size:13px}
+.table td{padding:5px 0;border-top:1px dashed var(--line)}
+.table td:last-child{text-align:right;font-family:var(--mono)}
+.foot{font-size:12px;color:var(--muted);text-align:center;margin:0}
+@media (prefers-reduced-motion:reduce){.tk::before{transition:none}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <h1 class="brand">Drink Tickets</h1>
+    <span class="mono" id="nowLbl"></span>
+  </header>
+
+  <div class="banner" id="sampleBanner" hidden>
+    <span>This is a sample week so you can see how it works.</span>
+    <button id="startFresh" type="button">Start my own roll</button>
+  </div>
+
+  <div class="clock" id="clockBanner" hidden></div>
+
+  <section class="balance" aria-live="polite">
+    <div class="big">
+      <span class="n" id="availN">7</span>
+      <span class="lbl" id="availLbl">pours left</span>
+      <span class="of" id="availOf"></span>
+    </div>
+    <div class="roll" id="roll" aria-hidden="true"></div>
+    <div class="next" id="nextLbl"></div>
+  </section>
+
+  <div class="pull">
+    <button class="primary" id="pullOne" type="button">Pull a pour<small>One 12 oz beer at 5.5%, or equivalent</small></button>
+    <button class="secondary" id="togglePicker" type="button" aria-expanded="false"><span>Something bigger or different</span><span class="mono">▾</span></button>
+    <div class="picker" id="picker" hidden></div>
+  </div>
+
+  <div id="verdict" hidden></div>
+
+  <section class="card">
+    <h2>Out on loan</h2>
+    <ul class="ledger" id="active"></ul>
+  </section>
+
+  <section class="card">
+    <details id="lateBox">
+      <summary>Log one I already had</summary>
+      <form class="form" id="lateForm">
+        <div class="field"><label for="lateDrink">Drink</label><select id="lateDrink"></select></div>
+        <div class="field"><label for="lateWhen">When</label><input id="lateWhen" type="datetime-local"></div>
+        <p class="hint">Logged drinks always count, even past your limit. It returns 7 days after the time you enter.</p>
+        <div class="btnrow"><button class="btn" type="submit">Log it</button></div>
+      </form>
+    </details>
+  </section>
+
+  <section class="card">
+    <details id="setBox">
+      <summary>Settings</summary>
+      <div class="form">
+        <div class="field">
+          <label>Weekly allowance</label>
+          <div class="stepper">
+            <button type="button" id="budDown" aria-label="Fewer pours">−</button>
+            <output id="budOut">7</output>
+            <button type="button" id="budUp" aria-label="More pours">+</button>
+            <span class="hint" id="budUnits"></span>
+          </div>
+          <p class="hint">Default is 7 pours, about 14 UK units. One pour is 0.66 oz of alcohol, or 1.95 UK units.</p>
+        </div>
+        <div class="field">
+          <label>Pour values</label>
+          <table class="table" id="valTable"></table>
+        </div>
+        <div class="field">
+          <label>Test clock</label>
+          <p class="hint">Skip ahead to watch pours come back without waiting a week.</p>
+          <div class="btnrow">
+            <button class="btn ghost" type="button" data-skip="3600000">+1 hour</button>
+            <button class="btn ghost" type="button" data-skip="86400000">+1 day</button>
+            <button class="btn ghost" type="button" id="clockReset">Back to real time</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Backup</label>
+          <p class="hint">Your history lives only on this phone. Save a backup file now and then, and use it to move to a new phone.</p>
+          <div class="btnrow">
+            <button class="btn ghost" type="button" id="exportBtn">Save backup</button>
+            <button class="btn ghost" type="button" id="importBtn">Restore backup</button>
+            <input type="file" id="importFile" accept="application/json,.json" hidden>
+          </div>
+          <p class="hint" id="backupMsg" hidden></p>
+        </div>
+        <div class="field">
+          <label>Start over</label>
+          <div class="btnrow"><button class="btn danger" type="button" id="wipe">Erase all history</button></div>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <section class="card" id="pastCard" hidden>
+    <h2>Returned to the roll</h2>
+    <ul class="ledger past" id="past"></ul>
+  </section>
+
+  <p class="foot">Drink Tickets · history stays on this phone</p>
+</div>
+
+<script>
+(() => {
+  const DRINKS = [
+    {k:'beer12', name:'12 oz beer, 5.5%', amt:1},
+    {k:'wine5',  name:'5 oz wine, 12%', amt:1},
+    {k:'shot',   name:'1.5 oz spirit, 80 proof', amt:1},
+    {k:'beer16', name:'16 oz beer or cider, 5.5%', amt:1.25},
+    {k:'cocktail', name:'Cocktail, 2 oz spirit', amt:1.25},
+    {k:'wine8',  name:'8 oz wine, 12%', amt:1.5},
+    {k:'ipa16',  name:'16 oz IPA, 7%', amt:1.75},
+  ];
+  const byK = Object.fromEntries(DRINKS.map(d => [d.k, d]));
+  const KEY = 'drink-tickets-v1';
+  const EPS = 1e-9;
+
+  let S = load();
+  let lastPullId = null;
+  let armed = null;
+
+  function load(){
+    try{
+      const raw = localStorage.getItem(KEY);
+      if (raw){ const s = JSON.parse(raw); if (s && Array.isArray(s.pulls)) return s; }
+    }catch(e){}
+    return sampleState();
+  }
+  function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+  function sampleState(){
+    const n = Date.now(), H = 3600e3, D = 24*H;
+    const mk = (k, ago) => ({id: uid(), t: n - ago, k, amt: byK[k].amt, sample: true});
+    return {budget:7, offset:0, sample:true, pulls:[
+      mk('beer12', 6*D + 3*H), mk('wine8', 4*D + 2*H), mk('ipa16', 2*D + 5*H), mk('beer12', 1*D + 1*H)
+    ]};
+  }
+  function uid(){ return Math.random().toString(36).slice(2, 10); }
+
+  // Engine
+  const now = () => Date.now() + (S.offset || 0);
+  function returnAt(t){ const d = new Date(t); d.setDate(d.getDate() + 7); return d.getTime(); } // calendar math keeps clock time across DST
+  function active(){ const n = now(); return S.pulls.filter(p => p.t <= n && returnAt(p.t) > n).sort((a,b) => a.t - b.t); }
+  function available(){ return S.budget - active().reduce((s,p) => s + p.amt, 0); }
+  function fitsAt(amt){
+    let avail = available();
+    if (avail + EPS >= amt) return now();
+    for (const p of active()){ avail += p.amt; if (avail + EPS >= amt) return returnAt(p.t); }
+    return null; // more than the whole allowance
+  }
+
+  // Formatting
+  function fmt(x){
+    const neg = x < -EPS; let a = Math.abs(Math.round(x*4)/4);
+    const w = Math.floor(a + EPS), f = Math.round((a - w)*4);
+    const fr = ['','¼','½','¾'][f] || '';
+    return (neg ? '−' : '') + (w === 0 && fr ? fr : w + fr);
+  }
+  const pl = x => Math.abs(x - 1) < EPS ? 'pour' : 'pours';
+  function when(ms){
+    const d = new Date(ms), n = new Date(now());
+    const time = d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+    const day0 = new Date(n.getFullYear(), n.getMonth(), n.getDate()).getTime();
+    const dd = Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() - day0) / 864e5);
+    if (dd === 0) return 'today ' + time;
+    if (dd === 1) return 'tomorrow ' + time;
+    if (dd === -1) return 'yesterday ' + time;
+    return d.toLocaleDateString([], {weekday:'short', month:'short', day:'numeric'}) + ' ' + time;
+  }
+  function toInput(ms){ const d = new Date(ms - new Date(ms).getTimezoneOffset()*6e4); return d.toISOString().slice(0,16); }
+
+  // Actions
+  function clearSample(){ if (S.sample){ S.pulls = S.pulls.filter(p => !p.sample); S.sample = false; } }
+  function pull(k){
+    const d = byK[k];
+    const before = available();
+    if (before + EPS < d.amt){ showNo(d, before); return; }
+    if (S.sample) clearSample();
+    const p = {id: uid(), t: now(), k, amt: d.amt};
+    S.pulls.push(p); lastPullId = p.id; save();
+    showOk(d, available(), p);
+    closePicker(); render();
+  }
+  function showOk(d, left, p){
+    const v = $('verdict');
+    v.className = 'verdict ok'; v.hidden = false;
+    v.innerHTML = `<div class="head">Ticket granted</div>
+      <p>${d.name}: ${fmt(d.amt)} ${pl(d.amt)}. You have <b>${fmt(left)} ${pl(left)}</b> left.</p>
+      <div class="row"><span class="hint">Returns ${when(returnAt(p.t))}</span><button class="link" id="undo" type="button">Undo</button></div>`;
+    $('undo').onclick = () => { S.pulls = S.pulls.filter(x => x.id !== lastPullId); save(); v.hidden = true; render(); };
+  }
+  function showNo(d, left){
+    const v = $('verdict');
+    v.className = 'verdict no'; v.hidden = false;
+    const at = fitsAt(d.amt);
+    const fit = DRINKS.filter(x => x.amt <= left + EPS).sort((a,b) => b.amt - a.amt);
+    let msg = `<div class="head">No ticket</div>
+      <p>${d.name} takes ${fmt(d.amt)} ${pl(d.amt)}. You have ${fmt(Math.max(left,0))} left.</p>`;
+    if (fit.length) msg += `<p>Fits now: ${fit.slice(0,3).map(x => x.name).join('; ')}.</p>`;
+    msg += at ? `<p class="hint">This one fits again ${when(at)}.</p>`
+              : `<p class="hint">That's more than your whole weekly allowance.</p>`;
+    v.innerHTML = msg;
+  }
+
+  // Render
+  const $ = id => document.getElementById(id);
+  function render(){
+    const a = available(), act = active();
+    $('nowLbl').textContent = new Date(now()).toLocaleDateString([], {weekday:'short', month:'short', day:'numeric'});
+    $('sampleBanner').hidden = !S.sample;
+    $('clockBanner').hidden = !S.offset;
+    if (S.offset){ const h = Math.round(S.offset/36e5); $('clockBanner').textContent = `Test clock is ${Math.floor(h/24)}d ${h%24}h ahead of real time.`; }
+
+    const n = $('availN'); n.textContent = fmt(a); n.classList.toggle('neg', a < -EPS);
+    $('availLbl').textContent = a < -EPS ? `${pl(-a)} over` : `${pl(a)} left`;
+    $('availOf').textContent = `of ${S.budget} in any 7 days`;
+    const nx = act[0];
+    $('nextLbl').innerHTML = nx ? `Next return: <b>${fmt(nx.amt)} ${pl(nx.amt)}</b> ${when(returnAt(nx.t))}` : 'Your full allowance is available.';
+
+    const roll = $('roll'); roll.innerHTML = '';
+    for (let i = 0; i < S.budget; i++){
+      const f = Math.max(0, Math.min(1, a - i));
+      const el = document.createElement('div');
+      el.className = 'tk' + (f >= 1 ? ' full' : f > 0 ? ' part' : '');
+      el.style.setProperty('--f', f);
+      el.innerHTML = `<span>No.${String(i+1).padStart(3,'0')}</span>`;
+      roll.appendChild(el);
+    }
+
+    $('picker').innerHTML = DRINKS.map(d =>
+      `<button class="drink${d.amt > a + EPS ? ' nofit' : ''}" type="button" data-k="${d.k}"><b>${d.name}</b><span class="mono">${fmt(d.amt)} ${pl(d.amt)}</span></button>`).join('');
+
+    const row = (p, past) => `<li>
+      <span class="amt">${fmt(p.amt)}</span>
+      <span class="what">${byK[p.k].name}${p.late ? '<span class="tag">logged</span>' : ''}${p.sample ? '<span class="tag">sample</span>' : ''}</span>
+      ${past ? '' : `<button class="x${armed === p.id ? ' arm' : ''}" type="button" data-del="${p.id}">${armed === p.id ? 'Remove?' : 'Remove'}</button>`}
+      <span class="when mono">${when(p.t)} → ${past ? 'returned' : 'back'} ${when(returnAt(p.t))}</span></li>`;
+    $('active').innerHTML = act.length ? act.slice().reverse().map(p => row(p, false)).join('') : '<li><p class="empty">Nothing out. Every ticket is on the roll.</p></li>';
+
+    const n2 = now();
+    const past = S.pulls.filter(p => returnAt(p.t) <= n2 && returnAt(p.t) > n2 - 14*864e5).sort((a,b) => b.t - a.t);
+    $('pastCard').hidden = !past.length;
+    $('past').innerHTML = past.map(p => row(p, true)).join('');
+
+    $('budOut').textContent = S.budget;
+    $('budUnits').textContent = `≈ ${(S.budget*1.95).toFixed(1)} UK units`;
+  }
+
+  function closePicker(){ $('picker').hidden = true; $('togglePicker').setAttribute('aria-expanded','false'); }
+
+  // Wiring
+  $('pullOne').onclick = () => pull('beer12');
+  $('togglePicker').onclick = () => {
+    const open = $('picker').hidden; $('picker').hidden = !open;
+    $('togglePicker').setAttribute('aria-expanded', String(open));
+  };
+  $('picker').onclick = e => { const b = e.target.closest('[data-k]'); if (b) pull(b.dataset.k); };
+  $('active').onclick = e => {
+    const b = e.target.closest('[data-del]'); if (!b) return;
+    if (armed === b.dataset.del){ S.pulls = S.pulls.filter(p => p.id !== armed); armed = null; save(); }
+    else { armed = b.dataset.del; setTimeout(() => { if (armed === b.dataset.del){ armed = null; render(); } }, 4000); }
+    render();
+  };
+  $('startFresh').onclick = () => { clearSample(); save(); $('verdict').hidden = true; render(); };
+
+  $('lateDrink').innerHTML = DRINKS.map(d => `<option value="${d.k}">${d.name} (${fmt(d.amt)})</option>`).join('');
+  $('lateBox').addEventListener('toggle', () => { const w = $('lateWhen'); w.value = toInput(now() - 36e5); w.max = toInput(now()); });
+  $('lateForm').onsubmit = e => {
+    e.preventDefault();
+    const t = new Date($('lateWhen').value).getTime();
+    const v = $('verdict'); v.hidden = false;
+    if (!t || t > now()){ v.className = 'verdict no'; v.innerHTML = '<div class="head">Check the time</div><p>Pick a time in the past.</p>'; return; }
+    if (S.sample) clearSample();
+    const d = byK[$('lateDrink').value];
+    S.pulls.push({id: uid(), t, k: d.k, amt: d.amt, late: true}); save();
+    const a = available();
+    v.className = 'verdict ok';
+    v.innerHTML = `<div class="head">Logged</div><p>${d.name} at ${when(t)}. ${returnAt(t) <= now() ? 'That was more than 7 days ago, so it no longer counts.' : `You have <b>${fmt(a)} ${pl(a)}</b> ${a < -EPS ? 'over' : 'left'}.`}</p>`;
+    $('lateBox').open = false; render();
+  };
+
+  $('budDown').onclick = () => { S.budget = Math.max(1, S.budget - 1); save(); render(); };
+  $('budUp').onclick = () => { S.budget = Math.min(28, S.budget + 1); save(); render(); };
+  $('valTable').innerHTML = DRINKS.map(d => `<tr><td>${d.name}</td><td>${fmt(d.amt)}</td></tr>`).join('');
+  document.querySelectorAll('[data-skip]').forEach(b => b.onclick = () => { S.offset = (S.offset||0) + Number(b.dataset.skip); save(); render(); });
+  $('clockReset').onclick = () => { S.offset = 0; save(); render(); };
+  let wipeArmed = false;
+  $('wipe').onclick = () => {
+    if (!wipeArmed){ wipeArmed = true; $('wipe').textContent = 'Tap again to erase'; setTimeout(() => { wipeArmed = false; $('wipe').textContent = 'Erase all history'; }, 4000); return; }
+    S = {budget: S.budget, offset: 0, sample: false, pulls: []}; save(); wipeArmed = false;
+    $('wipe').textContent = 'Erase all history'; $('verdict').hidden = true; render();
+  };
+
+  // Backup
+  const msg = t => { const m = $('backupMsg'); m.textContent = t; m.hidden = false; };
+  $('exportBtn').onclick = async () => {
+    const stamp = new Date().toISOString().slice(0,10);
+    const name = `drink-tickets-${stamp}.json`;
+    const blob = new Blob([JSON.stringify({app:'drink-tickets', v:1, saved:new Date().toISOString(), state:S}, null, 2)], {type:'application/json'});
+    try{
+      const file = new File([blob], name, {type:'application/json'});
+      if (navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file], title:name}); msg('Backup ready. Save it to Files.'); return; }
+    }catch(e){ if (e && e.name === 'AbortError') return; }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    msg('Backup downloaded.');
+  };
+  $('importBtn').onclick = () => $('importFile').click();
+  $('importFile').onchange = async e => {
+    const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+    try{
+      const data = JSON.parse(await f.text());
+      const st = data && data.state;
+      if (!st || !Array.isArray(st.pulls) || typeof st.budget !== 'number') throw new Error('shape');
+      st.pulls = st.pulls.filter(p => p && typeof p.t === 'number' && byK[p.k]).map(p => ({...p, amt: byK[p.k].amt}));
+      S = {budget: Math.min(28, Math.max(1, Math.round(st.budget))), offset: 0, sample: false, pulls: st.pulls};
+      save(); render(); msg(`Restored ${S.pulls.length} entries.`);
+    }catch(err){ msg('That file is not a Drink Tickets backup.'); }
+  };
+
+  // Offline support and storage
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+  try{ navigator.storage && navigator.storage.persist && navigator.storage.persist(); }catch(e){}
+
+  setInterval(render, 60000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) render(); });
+  render();
+})();
+</script>
+</body>
+</html>
