@@ -1,4 +1,5 @@
 // Drink Tickets service worker: network first so updates show up, cached copy when offline.
+// 'no-cache' makes the browser check with GitHub for a newer file instead of reusing a recent copy.
 const CACHE = 'drink-tickets-v1';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 
@@ -11,7 +12,7 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   e.respondWith(
-    fetch(e.request).then(res => {
+    fetch(e.request, {cache: 'no-cache'}).then(res => {
       if (res && (res.ok || res.type === 'opaque')) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); }
       return res;
     }).catch(() => caches.match(e.request, {ignoreSearch: true}).then(r => r || caches.match('index.html')))
