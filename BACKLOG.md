@@ -10,13 +10,11 @@
 - [ ] **Custom domain decision.** Decide before sending the link. Switching later strands everyone's history at the old address.
 - [ ] **21+ confirmation screen** and a short privacy statement (nothing leaves the phone).
 
-### Only if it shows up in real use
-- [ ] **Slow-signal launch.** On a weak connection the app can hang on a blank screen before falling back to the offline copy. Fix: a timeout of a few seconds in `sw.js`.
-
 ## Done
 - 2026-10-29: Sample banner, drink picker, and messages now hide properly.
 - 2026-10-29: `sw.js` always checks GitHub for fresh files.
 - 2026-10-29: Over-allowance wording: "You're 1¾ pours over. You're back within your allowance Thu, Nov 5 11:12 AM."
+- 2026-10-30: App opens instantly from the phone's saved copy on any signal (found in a basement bar on day one). Updates now appear on the second launch after publishing. Fonts no longer block the screen from drawing.
 
 ## Decisions so far
 - **Pour** = one 12 oz beer at 5.5% ABV (0.66 oz ethanol, 1.95 UK units). Other drinks are fractions of a pour, rounded to quarters.
