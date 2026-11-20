@@ -22,6 +22,7 @@
 :root{
   --bg:#EEF1F5; --surface:#FFFFFF; --ink:#1B2331; --muted:#5A6476; --line:#D6DCE5;
   --ticket:#E6A83A; --ticket-deep:#C98A1E; --ticket-ink:#33240A; --ticket-empty:#E2E6EC;
+  --social:#3E8E9E; --social-deep:#2F7383; --social-ink:#FFFFFF;
   --ok:#2D7A57; --ok-bg:#E4F2EA; --no:#A93838; --no-bg:#F7E6E5; --warn-bg:#FFF4DB;
   --display:"Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
   --body:"Public Sans", -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
@@ -30,12 +31,14 @@
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
   --bg:#111620; --surface:#1A212D; --ink:#E7EBF1; --muted:#97A1B2; --line:#2B3443;
   --ticket:#E9B24D; --ticket-deep:#C9922C; --ticket-ink:#2A1D05; --ticket-empty:#262E3B;
+  --social:#5FB3C2; --social-deep:#4A9AAA; --social-ink:#0E1C20;
   --ok:#62C394; --ok-bg:#16291F; --no:#F0837A; --no-bg:#2D1A1A; --warn-bg:#2B2414;
   color-scheme:dark;
 }}
 :root[data-theme="dark"]{
   --bg:#111620; --surface:#1A212D; --ink:#E7EBF1; --muted:#97A1B2; --line:#2B3443;
   --ticket:#E9B24D; --ticket-deep:#C9922C; --ticket-ink:#2A1D05; --ticket-empty:#262E3B;
+  --social:#5FB3C2; --social-deep:#4A9AAA; --social-ink:#0E1C20;
   --ok:#62C394; --ok-bg:#16291F; --no:#F0837A; --no-bg:#2D1A1A; --warn-bg:#2B2414;
   color-scheme:dark;
 }
@@ -85,6 +88,20 @@ button{cursor:pointer}
   -webkit-mask:radial-gradient(circle 10px at 0 50%,#0000 96%,#000) left/51% 100% no-repeat,radial-gradient(circle 10px at 100% 50%,#0000 96%,#000) right/51% 100% no-repeat;
           mask:radial-gradient(circle 10px at 0 50%,#0000 96%,#000) left/51% 100% no-repeat,radial-gradient(circle 10px at 100% 50%,#0000 96%,#000) right/51% 100% no-repeat}
 .primary:active{background:var(--ticket-deep)}
+.primary.social{background:var(--social);color:var(--social-ink);padding:12px 16px;font-size:22px}
+.primary.social:active{background:var(--social-deep)}
+.primary.social.spent{opacity:.55}
+.tier{padding:12px}
+.tier .amtbig{font-family:var(--display);font-weight:800;font-size:30px;line-height:1}
+.tier .ex{font-size:12.5px;color:var(--muted);line-height:1.35}
+.nextbtn{background:none;border:0;padding:0;text-align:left;font-size:13.5px;color:var(--muted);text-decoration:underline dotted;text-underline-offset:4px}
+.nextbtn b{color:var(--ink);font-weight:600}
+.sched{list-style:none;margin:0;padding:10px 12px;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.sched li{display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-top:1px dashed var(--line);font-size:14px}
+.sched li:first-child{border-top:0}
+.sched .q{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.sched .zero{color:var(--muted)}
+.sched .note{font-size:12px;color:var(--muted);border-top:0;padding-top:8px}
 .primary small{display:block;font-family:var(--body);font-weight:600;font-size:12.5px;letter-spacing:.02em;text-transform:none;opacity:.8}
 .secondary{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:11px 14px;font-weight:600;font-size:14.5px;text-align:left;display:flex;justify-content:space-between;align-items:center}
 .picker{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -167,12 +184,13 @@ details[open] summary{margin-bottom:10px}
     </div>
     <div class="roll" id="roll" aria-hidden="true"></div>
     <div class="next" id="nextLbl"></div>
+    <ul class="sched" id="sched" hidden></ul>
   </section>
 
   <div class="pull">
-    <button class="primary" id="pullOne" type="button">Pull a pour<small>One 12 oz beer at 5.5%, or equivalent</small></button>
-    <button class="secondary" id="togglePicker" type="button" aria-expanded="false"><span>Something bigger or different</span><span class="mono">▾</span></button>
+    <button class="primary" id="pullOne" type="button" aria-expanded="false" aria-controls="picker">Pull a pour<small>Choose a size</small></button>
     <div class="picker" id="picker" hidden></div>
+    <button class="primary social" id="socialBtn" type="button">Social pour<small id="socialSub"></small></button>
   </div>
 
   <div id="verdict" hidden></div>
@@ -188,7 +206,7 @@ details[open] summary{margin-bottom:10px}
       <form class="form" id="lateForm">
         <div class="field"><label for="lateDrink">Drink</label><select id="lateDrink"></select></div>
         <div class="field"><label for="lateWhen">When</label><input id="lateWhen" type="datetime-local"></div>
-        <p class="hint">Logged drinks always count, even past your limit. It returns 7 days after the time you enter.</p>
+        <p class="hint">Logged drinks always count, even past your limit. Tickets come back at 5 PM, seven days after the day you enter.</p>
         <div class="btnrow"><button class="btn" type="submit">Log it</button></div>
       </form>
     </details>
@@ -209,7 +227,7 @@ details[open] summary{margin-bottom:10px}
           <p class="hint">Default is 7 pours, about 14 UK units. One pour is 0.66 oz of alcohol, or 1.95 UK units.</p>
         </div>
         <div class="field">
-          <label>Pour values</label>
+          <label>Price list</label>
           <table class="table" id="valTable"></table>
         </div>
         <div class="field">
@@ -244,12 +262,21 @@ details[open] summary{margin-bottom:10px}
     <ul class="ledger past" id="past"></ul>
   </section>
 
-  <p class="foot">Drink Tickets · history stays on this phone</p>
+  <p class="foot">Drink Tickets v4 · Nov 20 · history stays on this phone</p>
 </div>
 
 <script>
 (() => {
-  const DRINKS = [
+  // The price list: what the Pull button offers.
+  const TIERS = [
+    {k:'p100', amt:1,    ex:'12 oz beer, 5 oz wine, 1.5 oz spirit'},
+    {k:'p125', amt:1.25, ex:'16 oz up to 5.5%, 2 oz cocktail'},
+    {k:'p150', amt:1.5,  ex:'8 oz wine, 16 oz at 6–6.5%'},
+    {k:'p175', amt:1.75, ex:'16 oz at 7% or more, cocktail over 2 oz'},
+  ];
+  // Drink entries from v1–v3. Never offered again, but kept so existing history
+  // still reads, displays and counts exactly as it was recorded. Do not delete.
+  const LEGACY = [
     {k:'beer12', name:'12 oz beer, 5.5%', amt:1},
     {k:'wine5',  name:'5 oz wine, 12%', amt:1},
     {k:'shot',   name:'1.5 oz spirit, 80 proof', amt:1},
@@ -258,8 +285,10 @@ details[open] summary{margin-bottom:10px}
     {k:'wine8',  name:'8 oz wine, 12%', amt:1.5},
     {k:'ipa16',  name:'16 oz IPA, 7%', amt:1.75},
   ];
-  const byK = Object.fromEntries(DRINKS.map(d => [d.k, d]));
-  const KEY = 'drink-tickets-v1';
+  const SOCIAL = {k:'social', amt:0};
+  const SOCIAL_LIMIT = 3;
+  const byK = Object.fromEntries([...TIERS, ...LEGACY, SOCIAL].map(d => [d.k, d]));
+  const KEY = 'drink-tickets-v1';  // storage name: never change it, or existing history is orphaned
   const EPS = 1e-9;
 
   let S = load();
@@ -278,15 +307,27 @@ details[open] summary{margin-bottom:10px}
     const n = Date.now(), H = 3600e3, D = 24*H;
     const mk = (k, ago) => ({id: uid(), t: n - ago, k, amt: byK[k].amt, sample: true});
     return {budget:7, offset:0, sample:true, pulls:[
-      mk('beer12', 6*D + 3*H), mk('wine8', 4*D + 2*H), mk('ipa16', 2*D + 5*H), mk('beer12', 1*D + 1*H)
+      mk('p100', 6*D + 3*H), mk('p150', 4*D + 2*H), mk('social', 3*D), mk('p175', 2*D + 5*H), mk('p100', 1*D + 1*H)
     ]};
   }
   function uid(){ return Math.random().toString(36).slice(2, 10); }
 
   // Engine
   const now = () => Date.now() + (S.offset || 0);
-  function returnAt(t){ const d = new Date(t); d.setDate(d.getDate() + 7); return d.getTime(); } // calendar math keeps clock time across DST
-  function active(){ const n = now(); return S.pulls.filter(p => p.t <= n && returnAt(p.t) > n).sort((a,b) => a.t - b.t); }
+  // A ticket comes back at 5 PM on the same weekday next week. Pulls between
+  // midnight and 4 AM count as the night before. Computed from the stored
+  // timestamp, so changing this rule never alters saved history.
+  const DAY_STARTS = 4, RETURN_HOUR = 17;
+  function returnAt(t){
+    const d = new Date(t);
+    if (d.getHours() < DAY_STARTS) d.setDate(d.getDate() - 1);
+    d.setDate(d.getDate() + 7);
+    d.setHours(RETURN_HOUR, 0, 0, 0);
+    return d.getTime();
+  }
+  function active(){ const n = now(); return S.pulls.filter(p => p.t <= n && returnAt(p.t) > n).sort((a,b) => returnAt(a.t) - returnAt(b.t) || a.t - b.t); }
+  const socialsOut = () => active().filter(p => p.k === 'social');
+  const socialsLeft = () => SOCIAL_LIMIT - socialsOut().length;
   function available(){ return S.budget - active().reduce((s,p) => s + p.amt, 0); }
   function fitsAt(amt){
     let avail = available();
@@ -303,6 +344,12 @@ details[open] summary{margin-bottom:10px}
     return (neg ? '−' : '') + (w === 0 && fr ? fr : w + fr);
   }
   const pl = x => Math.abs(x - 1) < EPS ? 'pour' : 'pours';
+  function nameOf(p){
+    const d = byK[p.k];
+    if (p.k === 'social') return 'Social pour';
+    if (d && d.name) return d.name;  // legacy drink entry
+    return `${fmt(p.amt)} ${pl(p.amt)}`;
+  }
   function when(ms){
     const d = new Date(ms), n = new Date(now());
     const time = d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
@@ -324,28 +371,69 @@ details[open] summary{margin-bottom:10px}
     if (S.sample) clearSample();
     const p = {id: uid(), t: now(), k, amt: d.amt};
     S.pulls.push(p); lastPullId = p.id; save();
-    showOk(d, available(), p);
-    closePicker(); render();
+    closePicker();
+    showOk(p, available());
+    render();
   }
-  function showOk(d, left, p){
+  function pullSocial(){
+    if (socialsLeft() <= 0){
+      const v = $('verdict'); v.className = 'verdict no'; v.hidden = false;
+      const nxt = socialsOut()[0];
+      v.innerHTML = `<div class="head">No social pours left</div>
+        <p>You've had ${SOCIAL_LIMIT} in the last seven days.</p>
+        <p class="hint">The next one comes back ${when(returnAt(nxt.t))}.</p>`;
+      return;
+    }
+    if (S.sample) clearSample();
+    const p = {id: uid(), t: now(), k: 'social', amt: 0};
+    S.pulls.push(p); lastPullId = p.id; save();
+    closePicker();
+    showOk(p, available());
+    render();
+  }
+  function showOk(p, left){
     const v = $('verdict');
     v.className = 'verdict ok'; v.hidden = false;
-    v.innerHTML = `<div class="head">Ticket granted</div>
-      <p>${d.name}: ${fmt(d.amt)} ${pl(d.amt)}. You have <b>${fmt(left)} ${pl(left)}</b> left.</p>
-      <div class="row"><span class="hint">Returns ${when(returnAt(p.t))}</span><button class="link" id="undo" type="button">Undo</button></div>`;
+    const social = p.k === 'social';
+    const sl = socialsLeft();
+    v.innerHTML = social
+      ? `<div class="head">Social pour logged</div>
+         <p>No ticket used. ${sl} of ${SOCIAL_LIMIT} social pours left this week.</p>
+         <div class="row"><span class="hint">Comes back ${when(returnAt(p.t))}</span><button class="link" id="undo" type="button">Undo</button></div>`
+      : `<div class="head">Ticket granted</div>
+         <p>${fmt(p.amt)} ${pl(p.amt)}. You have <b>${fmt(left)} ${pl(left)}</b> left.</p>
+         <div class="row"><span class="hint">Returns ${when(returnAt(p.t))}</span><button class="link" id="undo" type="button">Undo</button></div>`;
     $('undo').onclick = () => { S.pulls = S.pulls.filter(x => x.id !== lastPullId); save(); v.hidden = true; render(); };
   }
   function showNo(d, left){
     const v = $('verdict');
     v.className = 'verdict no'; v.hidden = false;
     const at = fitsAt(d.amt);
-    const fit = DRINKS.filter(x => x.amt <= left + EPS).sort((a,b) => b.amt - a.amt);
+    const fit = TIERS.filter(x => x.amt <= left + EPS).sort((a,b) => b.amt - a.amt)[0];
     let msg = `<div class="head">No ticket</div>
-      <p>${d.name} takes ${fmt(d.amt)} ${pl(d.amt)}. You have ${fmt(Math.max(left,0))} left.</p>`;
-    if (fit.length) msg += `<p>Fits now: ${fit.slice(0,3).map(x => x.name).join('; ')}.</p>`;
-    msg += at ? `<p class="hint">This one fits again ${when(at)}.</p>`
+      <p>That takes ${fmt(d.amt)} ${pl(d.amt)}. You have ${fmt(Math.max(left,0))} left.</p>`;
+    if (fit) msg += `<p>A ${fmt(fit.amt)} pour fits now.</p>`;
+    msg += at ? `<p class="hint">${fmt(d.amt)} ${pl(d.amt)} fits again ${when(at)}.</p>`
               : `<p class="hint">That's more than your whole weekly allowance.</p>`;
     v.innerHTML = msg;
+  }
+  function schedule(){
+    const out = active(), n = new Date(now());
+    const base = new Date(n.getFullYear(), n.getMonth(), n.getDate());
+    const rows = [];
+    for (let i = 0; i <= 7; i++){
+      const day = new Date(base); day.setDate(base.getDate() + i);
+      const items = out.filter(p => { const r = new Date(returnAt(p.t)); return r.getFullYear() === day.getFullYear() && r.getMonth() === day.getMonth() && r.getDate() === day.getDate(); });
+      if (i === 0 && !items.length) continue;  // nothing left to come back today
+      const amt = items.reduce((s,p) => s + p.amt, 0), soc = items.filter(p => p.k === 'social').length;
+      const label = i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : day.toLocaleDateString([], {weekday:'long'});
+      const parts = [];
+      if (amt > EPS) parts.push(fmt(amt));
+      if (soc) parts.push(`${soc} social`);
+      rows.push(`<li><span>${label} <span class="hint">${day.toLocaleDateString([], {month:'short', day:'numeric'})}</span></span><span class="q${parts.length ? '' : ' zero'}">${parts.join(' · ') || '—'}</span></li>`);
+    }
+    rows.push('<li class="note">Tickets come back at 5 PM. Assumes no new pours.</li>');
+    return rows.join('');
   }
 
   // Render
@@ -362,8 +450,21 @@ details[open] summary{margin-bottom:10px}
     $('availLbl').textContent = over ? `${pl(-a)} over` : `${pl(a)} left`;
     const back = over ? fitsAt(0) : null;
     $('availOf').textContent = over && back ? `of ${S.budget} in any 7 days · back within your allowance ${when(back)}` : `of ${S.budget} in any 7 days`;
-    const nx = act[0];
-    $('nextLbl').innerHTML = nx ? `Next return: <b>${fmt(nx.amt)} ${pl(nx.amt)}</b> ${when(returnAt(nx.t))}` : 'Your full allowance is available.';
+    const nx = act.find(p => p.amt > EPS);
+    if (nx){
+      const at = returnAt(nx.t);
+      const amt = act.filter(p => returnAt(p.t) === at).reduce((s,p) => s + p.amt, 0);
+      const open = !$('sched').hidden;
+      $('nextLbl').innerHTML = `<button class="nextbtn" id="nextBtn" type="button" aria-expanded="${open}" aria-controls="sched">Next return: <b>${fmt(amt)} ${pl(amt)}</b> ${when(at)} · ${open ? 'hide' : 'see the week'}</button>`;
+      $('nextBtn').onclick = () => { $('sched').hidden = !$('sched').hidden; render(); };
+      if (open) $('sched').innerHTML = schedule();
+    } else {
+      $('nextLbl').textContent = 'Your full allowance is available.';
+      $('sched').hidden = true;
+    }
+    const sl = socialsLeft();
+    $('socialSub').textContent = sl > 0 ? `No ticket · ${sl} of ${SOCIAL_LIMIT} left this week` : `None left · next back ${when(returnAt(socialsOut()[0].t))}`;
+    $('socialBtn').classList.toggle('spent', sl <= 0);
 
     const roll = $('roll'); roll.innerHTML = '';
     for (let i = 0; i < S.budget; i++){
@@ -375,12 +476,12 @@ details[open] summary{margin-bottom:10px}
       roll.appendChild(el);
     }
 
-    $('picker').innerHTML = DRINKS.map(d =>
-      `<button class="drink${d.amt > a + EPS ? ' nofit' : ''}" type="button" data-k="${d.k}"><b>${d.name}</b><span class="mono">${fmt(d.amt)} ${pl(d.amt)}</span></button>`).join('');
+    $('picker').innerHTML = TIERS.map(d =>
+      `<button class="drink tier${d.amt > a + EPS ? ' nofit' : ''}" type="button" data-k="${d.k}"><span class="amtbig">${fmt(d.amt)}</span><span class="ex">e.g. ${d.ex}</span></button>`).join('');
 
     const row = (p, past) => `<li>
       <span class="amt">${fmt(p.amt)}</span>
-      <span class="what">${byK[p.k].name}${p.late ? '<span class="tag">logged</span>' : ''}${p.sample ? '<span class="tag">sample</span>' : ''}</span>
+      <span class="what">${nameOf(p)}${p.late ? '<span class="tag">logged</span>' : ''}${p.sample ? '<span class="tag">sample</span>' : ''}</span>
       ${past ? '' : `<button class="x${armed === p.id ? ' arm' : ''}" type="button" data-del="${p.id}">${armed === p.id ? 'Remove?' : 'Remove'}</button>`}
       <span class="when mono">${when(p.t)} → ${past ? 'returned' : 'back'} ${when(returnAt(p.t))}</span></li>`;
     $('active').innerHTML = act.length ? act.slice().reverse().map(p => row(p, false)).join('') : '<li><p class="empty">Nothing out. Every ticket is on the roll.</p></li>';
@@ -394,14 +495,15 @@ details[open] summary{margin-bottom:10px}
     $('budUnits').textContent = `≈ ${(S.budget*1.95).toFixed(1)} UK units`;
   }
 
-  function closePicker(){ $('picker').hidden = true; $('togglePicker').setAttribute('aria-expanded','false'); }
+  function closePicker(){ $('picker').hidden = true; $('pullOne').setAttribute('aria-expanded','false'); }
 
   // Wiring
-  $('pullOne').onclick = () => pull('beer12');
-  $('togglePicker').onclick = () => {
+  $('pullOne').onclick = () => {
     const open = $('picker').hidden; $('picker').hidden = !open;
-    $('togglePicker').setAttribute('aria-expanded', String(open));
+    $('pullOne').setAttribute('aria-expanded', String(open));
+    if (open) $('verdict').hidden = true;
   };
+  $('socialBtn').onclick = pullSocial;
   $('picker').onclick = e => { const b = e.target.closest('[data-k]'); if (b) pull(b.dataset.k); };
   $('active').onclick = e => {
     const b = e.target.closest('[data-del]'); if (!b) return;
@@ -411,7 +513,7 @@ details[open] summary{margin-bottom:10px}
   };
   $('startFresh').onclick = () => { clearSample(); save(); $('verdict').hidden = true; render(); };
 
-  $('lateDrink').innerHTML = DRINKS.map(d => `<option value="${d.k}">${d.name} (${fmt(d.amt)})</option>`).join('');
+  $('lateDrink').innerHTML = TIERS.map(d => `<option value="${d.k}">${fmt(d.amt)} ${pl(d.amt)} (e.g. ${d.ex})</option>`).join('') + `<option value="social">Social pour (no ticket)</option>`;
   $('lateBox').addEventListener('toggle', () => { const w = $('lateWhen'); w.value = toInput(now() - 36e5); w.max = toInput(now()); });
   $('lateForm').onsubmit = e => {
     e.preventDefault();
@@ -427,13 +529,13 @@ details[open] summary{margin-bottom:10px}
     if (returnAt(t) <= now()) tail = 'That was more than 7 days ago, so it no longer counts.';
     else if (a < -EPS){ const back = fitsAt(0); tail = `You're <b>${fmt(-a)} ${pl(-a)}</b> over. You're back within your allowance ${when(back)}.`; }
     else tail = `You have <b>${fmt(a)} ${pl(a)}</b> left.`;
-    v.innerHTML = `<div class="head">Logged</div><p>${d.name} at ${when(t)}. ${tail}</p>`;
+    v.innerHTML = `<div class="head">Logged</div><p>${nameOf({k: d.k, amt: d.amt})} at ${when(t)}. ${tail}</p>`;
     $('lateBox').open = false; render();
   };
 
   $('budDown').onclick = () => { S.budget = Math.max(1, S.budget - 1); save(); render(); };
   $('budUp').onclick = () => { S.budget = Math.min(28, S.budget + 1); save(); render(); };
-  $('valTable').innerHTML = DRINKS.map(d => `<tr><td>${d.name}</td><td>${fmt(d.amt)}</td></tr>`).join('');
+  $('valTable').innerHTML = TIERS.map(d => `<tr><td>e.g. ${d.ex}</td><td>${fmt(d.amt)}</td></tr>`).join('') + `<tr><td>Social pour, ${SOCIAL_LIMIT} per week</td><td>0</td></tr>`;
   document.querySelectorAll('[data-skip]').forEach(b => b.onclick = () => { S.offset = (S.offset||0) + Number(b.dataset.skip); save(); render(); });
   $('clockReset').onclick = () => { S.offset = 0; save(); render(); };
   let wipeArmed = false;
@@ -464,7 +566,8 @@ details[open] summary{margin-bottom:10px}
       const data = JSON.parse(await f.text());
       const st = data && data.state;
       if (!st || !Array.isArray(st.pulls) || typeof st.budget !== 'number') throw new Error('shape');
-      st.pulls = st.pulls.filter(p => p && typeof p.t === 'number' && byK[p.k]).map(p => ({...p, amt: byK[p.k].amt}));
+      // Keep every entry exactly as saved, including its pour amount.
+      st.pulls = st.pulls.filter(p => p && typeof p.t === 'number' && typeof p.amt === 'number' && p.amt >= 0);
       S = {budget: Math.min(28, Math.max(1, Math.round(st.budget))), offset: 0, sample: false, pulls: st.pulls};
       save(); render(); msg(`Restored ${S.pulls.length} entries.`);
     }catch(err){ msg('That file is not a Drink Tickets backup.'); }
